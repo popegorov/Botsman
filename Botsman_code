@@ -1,0 +1,110 @@
+import telebot
+from telebot import types
+
+TOKEN = ''
+
+bot = telebot.TeleBot(TOKEN)
+
+
+def is_not_admin(message):
+    if bot.get_chat_member(message.chat.id, message.from_user.id).status not in ['creator', 'administrator']:
+        return True
+    return False
+
+
+def is_not_owner(message):
+    if bot.get_chat_member(message.chat.id, message.from_user.id).status not in ['creator']:
+        return True
+    return False
+
+
+@bot.message_handler(commands=['start'])
+def hello_message(message):
+    bot.send_message(message.chat.id, "Привет!")
+
+
+
+@bot.message_handler(commands=['ban'])
+def ban_user(message):
+    if is_not_admin(message):
+        bot.send_message(message.chat.id, "Нос не дорос. Гуляй, нужна админка")
+    elif message.reply_to_message is not None and is_not_admin(message.reply_to_message):
+        bot.ban_chat_member(message.chat.id, message.reply_to_message.from_user.id)
+        bot.send_message(message.chat.id, "BANNED")
+    elif message.reply_to_message is not None:
+        bot.send_message(message.chat.id, "Ты не туда воюешь")
+    else:
+        bot.send_message(message.chat.id,
+                         "Выбери пользователя, которого хочешь забанить, и ответь на его сообщение соотвествующей командой")
+
+
+@bot.message_handler(commands=['unban'])
+def unban_user(message):
+    if is_not_admin(message):
+        bot.send_message(message.chat.id, "Нос не дорос. Гуляй, нужна админка")
+        return
+    if message.reply_to_message is not None and is_not_admin(message.reply_to_message):
+        bot.unban_chat_member(message.chat.id, message.reply_to_message.from_user.id)
+        bot.send_message(message.chat.id, "UNBANNED")
+    elif message.reply_to_message is not None:
+        bot.send_message(message.chat.id, "Ты не туда воюешь")
+    else:
+        bot.send_message(message.chat.id,
+                         "Выбери пользователя, которого хочешь разбанить, и ответь на его сообщение соотвествующей командой")
+
+
+@bot.message_handler(commands=['get_out'])
+def get_out(message):
+    bot.send_message(message.chat.id, "За шо?(((")
+    bot.leave_chat(message.chat.id)
+
+
+@bot.message_handler(commands=['get_admins'])
+def get_admins(message):
+    admins = bot.get_chat_administrators(message.chat.id)
+    bot.send_message(message.chat.id, "Admins_count:" + str(len(admins)))
+
+
+@bot.message_handler(commands=['get_members'])
+def get_members(message):
+    bot.send_message(message.chat.id, "Members_count:" + str(bot.get_chat_member_count(message.chat.id)))
+
+
+@bot.message_handler(commands=['promote_user'])
+def promote_user(message):
+    if is_not_admin(message):
+        bot.send_message(message.chat.id, "Нос не дорос. Гуляй, нужна админка")
+    elif message.reply_to_message is not None and is_not_admin(message.reply_to_message):
+        bot.promote_chat_member(message.chat.id, message.reply_to_message.from_user.id, can_manage_chat=True,
+                                can_post_messages=True, can_edit_messages=True, can_delete_messages=True,
+                                can_manage_video_chats=True, can_promote_members=True, can_change_info=True,
+                                can_invite_users=True, can_pin_messages=True)
+        bot.send_message(message.chat.id, "Congrats")
+    elif message.reply_to_message is not None:
+        bot.send_message(message.chat.id, "Уже одмен. Протри очки")
+    else:
+        bot.send_message(message.chat.id,
+                         "Выбери пользователя, которого хочешь повысить, и ответь на его сообщение соотвествующей командой")
+
+
+@bot.message_handler(commands=['demote_user'])
+def demote_user(message):
+    if is_not_owner(message):
+        bot.send_message(message.chat.id, "Нос не дорос. Гуляй, только GOAT такое может")
+        return
+    if message.reply_to_message is not None:
+        bot.promote_chat_member(message.chat.id, message.reply_to_message.from_user.id, can_manage_chat=False,
+                                can_post_messages=False, can_edit_messages=False, can_delete_messages=False,
+                                can_manage_video_chats=False, can_promote_members=False, can_change_info=False,
+                                can_invite_users=False, can_pin_messages=False)
+        bot.send_message(message.chat.id, "I'm sorry")
+    else:
+        bot.send_message(message.chat.id,
+                         "Выбери пользователя, которого хочешь понизить, и ответь на его сообщение соотвествующей командой")
+
+@bot.message_handler(content_types=['new_chat_members'])
+def new_user(message):
+    bot.send_message(message.chat.id, "Вечер в хату, " + message.new_chat_members[0].first_name + '!')
+
+
+bot.polling(none_stop=True, interval=0)
